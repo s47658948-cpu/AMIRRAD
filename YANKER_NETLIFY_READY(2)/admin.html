@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YANKER // ADMIN PANEL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{--bg:#050810;--panel:#0c1428;--panel2:#101a31;--border:rgba(96,140,255,.18);--strong:rgba(96,140,255,.4);--blue:#2f5bff;--light:#7aa2ff;--text:#e9edff;--dim:#96a2c9;--faint:#5c6690;--ok:#31e2a0;--warn:#ffb545;--danger:#ff5c7c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 90% 0%,rgba(47,91,255,.18),transparent 65%),var(--bg);color:var(--text);font-family:Vazirmatn,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.wrap{max-width:1400px;margin:auto;padding:24px}
+.top{position:sticky;top:0;z-index:20;background:rgba(5,8,16,.82);backdrop-filter:blur(15px);border-bottom:1px solid var(--border)}
+.topin{max-width:1400px;margin:auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font:700 24px Rajdhani}.brand small{display:block;font:600 9px Rajdhani;letter-spacing:3px;color:var(--faint)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--strong);background:rgba(96,140,255,.07);color:var(--text);padding:9px 14px;border-radius:10px}.primary{background:linear-gradient(135deg,#2f5bff,#193a9d);color:#fff}.danger{border-color:rgba(255,92,124,.4);color:#ffb3c2}
+.grid{display:grid;grid-template-columns:220px 1fr;gap:18px}.side,.card{background:rgba(12,20,40,.82);border:1px solid var(--border);border-radius:18px}.side{padding:12px;position:sticky;top:82px;height:max-content}.side button{width:100%;text-align:right;background:none;border:0;color:var(--dim);padding:12px;border-radius:10px;margin-bottom:4px}.side button.active,.side button:hover{background:rgba(47,91,255,.15);color:#fff}
+.card{padding:18px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat span{font-size:11px;color:var(--faint)}.stat b{display:block;font:700 28px Rajdhani;margin-top:5px}.ticket-tabs{display:flex;gap:8px;margin:15px 0}.ticket-tabs button{border:1px solid var(--border);background:rgba(8,14,25,.7);color:var(--dim);padding:10px 14px;border-radius:10px}.ticket-tabs button.active{border-color:var(--strong);color:#fff;background:rgba(47,91,255,.15)}
+.ticket{margin-top:14px;border:1px solid var(--border);border-radius:16px;background:rgba(8,14,28,.75);padding:16px}.tickethead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.subject{font-weight:800;font-size:17px}.meta{font-size:11px;color:var(--faint);margin-top:5px}.status{padding:5px 9px;border-radius:999px;font-size:10px}.open{background:rgba(47,91,255,.12);color:var(--light)}.answered{background:rgba(49,226,160,.1);color:var(--ok)}.closed{background:rgba(255,181,69,.1);color:var(--warn)}
+.thread{max-height:380px;overflow:auto;margin:14px 0;padding:8px}.msg{display:flex;gap:8px;margin:9px 0}.msg.admin{justify-content:flex-start}.msg.user{justify-content:flex-end}.bubble{max-width:78%;padding:10px 12px;border-radius:13px;border:1px solid var(--border);background:rgba(17,27,53,.75);line-height:1.8;font-size:13px;white-space:pre-wrap;word-break:break-word}.msg.admin .bubble{border-color:rgba(122,162,255,.35)}.msg.user .bubble{background:rgba(47,91,255,.12)}
+.reply{display:grid;grid-template-columns:1fr auto;gap:9px;border-top:1px solid var(--border);padding-top:13px}.reply textarea{min-height:70px;resize:vertical;background:#070d1b;color:#fff;border:1px solid var(--border);border-radius:12px;padding:10px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formgrid label{font-size:12px;color:var(--dim);display:grid;gap:6px}.formgrid input,.formgrid textarea,.formgrid select{background:#070d1b;color:#fff;border:1px solid var(--border);border-radius:10px;padding:10px}.full{grid-column:1/-1}.hidden{display:none}.notice{padding:12px;border-radius:10px;background:rgba(49,226,160,.08);border:1px solid rgba(49,226,160,.25);color:#9df5d3;margin-bottom:14px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto}.side button{white-space:nowrap}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.wrap{padding:12px}.topin{padding:11px 12px}.formgrid,.reply{grid-template-columns:1fr}.full{grid-column:auto}.bubble{max-width:90%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin"><div class="brand">YANKER <small>SUNSET CITY // ADMIN</small></div><div class="actions"><button class="btn" onclick="loadAll()">↻ بروزرسانی</button><button class="btn danger" onclick="location.href='/'">خروج</button></div></div></header>
+<main class="wrap">
+<div id="login" class="card" style="max-width:430px;margin:80px auto">
+<h2>ورود به مدیریت</h2><p style="color:var(--dim)">برای ورود اطلاعات حساب مدیریت را وارد کنید.</p>
+<form onsubmit="login(event)"><div class="formgrid" style="grid-template-columns:1fr"><label>نام کاربری<input name="username" required value="owner"></label><label>رمز عبور<input name="password" type="password" required></label><button class="btn primary" type="submit">ورود</button></div></form><p id="err" style="color:#ff8da5"></p>
+</div>
+<div id="app" class="hidden"></div>
+</main>
+<script>
+const API="/.netlify/functions/api";
+let S={user:null,tickets:[],members:[],tab:"open"};
+async function api(action,method="GET",body=null){
+ const u=API+"?action="+encodeURIComponent(action);
+ const r=await fetch(u,{method,credentials:"same-origin",headers:{"Content-Type":"application/json","Accept":"application/json"},body:body?JSON.stringify(body):undefined});
+ const d=await r.json().catch(()=>({})); if(!r.ok) throw Error(d.error||"خطا"); return d;
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function date(x){try{return new Date(x).toLocaleString("fa-IR",{dateStyle:"medium",timeStyle:"short"})}catch(e){return""}}
+async function login(e){
+ e.preventDefault(); const f=e.target;
+ try{
+  const r=await api("user-login","POST",{username:f.username.value.trim().toLowerCase(),password:f.password.value});
+  if(!r.user || !["owner","admin","moderator"].includes(r.user.role)) throw Error("این حساب دسترسی مدیریت ندارد.");
+  S.user=r.user; document.getElementById("login").classList.add("hidden"); document.getElementById("app").classList.remove("hidden"); await loadAll();
+ }catch(x){document.getElementById("err").textContent=x.message}
+}
+async function loadAll(){
+ try{
+  const [t,m]=await Promise.all([api("tickets-admin"),api("members")]);
+  S.tickets=t.tickets||[]; S.members=m.members||[]; render();
+ }catch(e){alert(e.message)}
+}
+function sendAdmin(e,id){
+ e.preventDefault(); const f=e.target,m=f.message.value.trim(); if(!m)return;
+ return api("ticket-reply","POST",{id,message:m}).then(loadAll).catch(x=>alert(x.message));
+}
+function closeTicket(id){return api("ticket-close","POST",{id}).then(loadAll).catch(x=>alert(x.message))}
+function delTicket(id){if(!confirm("تیکت و تمام پیام‌های آن حذف شود؟"))return;return api("ticket-delete","POST",{id}).then(loadAll).catch(x=>alert(x.message))}
+function createForMember(e){
+ e.preventDefault();const f=e.target;
+ return api("ticket-create-admin","POST",{username:f.username.value,subject:f.subject.value.trim(),message:f.message.value.trim()}).then(()=>{f.reset();loadAll()}).catch(x=>alert(x.message))
+}
+function render(){
+ const list=S.tickets.slice().sort((a,b)=>Number(b.updatedAt||b.createdAt)-Number(a.updatedAt||a.createdAt));
+ const open=list.filter(t=>t.status!=="closed"), closed=list.filter(t=>t.status==="closed"), vis=S.tab==="closed"?closed:open;
+ document.getElementById("app").innerHTML=`
+ <div class="stats"><div class="card stat"><span>کل تیکت‌ها</span><b>${list.length}</b></div><div class="card stat"><span>باز</span><b>${open.length}</b></div><div class="card stat"><span>پاسخ داده شده</span><b>${list.filter(t=>t.status==="answered").length}</b></div><div class="card stat"><span>بسته</span><b>${closed.length}</b></div></div>
+ <div class="grid"><aside class="side"><button class="${S.tab==="open"?"active":""}" onclick="S.tab='open';render()">🎫 تیکت‌های فعال</button><button class="${S.tab==="closed"?"active":""}" onclick="S.tab='closed';render()">🗃️ آرشیو تیکت‌ها</button></aside>
+ <section><div class="card"><h2 style="margin-top:0">مرکز پشتیبانی Yanker</h2><p style="color:var(--dim)">گفتگوی کامل مدیریت با اعضا؛ هر پیام داخل همان تیکت ذخیره می‌شود.</p>
+ ${S.tab==="open"?`<form onsubmit="createForMember(event)" class="formgrid"><label>عضو<select name="username">${S.members.map(m=>`<option value="${esc(m.username)}">${esc(m.name)} — @${esc(m.username)}</option>`).join("")}</select></label><label>موضوع<input name="subject" required maxlength="120"></label><label class="full">پیام<textarea name="message" required maxlength="3000"></textarea></label><button class="btn primary" type="submit">ارسال تیکت برای عضو</button></form>`:""}
+ </div>${vis.length?vis.map(t=>`
+ <article class="ticket"><div class="tickethead"><div><div class="subject">${esc(t.subject)}</div><div class="meta">${esc(t.name||"عضو")} · @${esc(t.username||"")} · ${date(t.updatedAt||t.createdAt)}</div></div><span class="status ${esc(t.status)}">${t.status==="closed"?"بسته":t.status==="answered"?"پاسخ داده شده":"باز"}</span></div>
+ <div class="thread">${(t.messages||[]).map(m=>`<div class="msg ${m.sender==="admin"?"admin":"user"}"><div class="bubble"><b>${esc(m.sender==="admin"?"مدیریت":m.senderName||t.name||"عضو")}</b><div style="color:var(--faint);font-size:10px">${date(m.createdAt)}</div>${esc(m.body)}</div></div>`).join("")}</div>
+ ${t.status!=="closed"?`<form class="reply" onsubmit="sendAdmin(event,'${esc(t.id)}')"><textarea name="message" maxlength="3000" placeholder="پاسخ مدیریت را همین‌جا بنویس..." required></textarea><button class="btn primary" type="submit">ارسال پاسخ</button></form><div class="actions" style="margin-top:10px"><button class="btn" onclick="closeTicket('${esc(t.id)}')">✓ بستن تیکت</button><button class="btn danger" onclick="delTicket('${esc(t.id)}')">حذف</button></div>`:`<div style="color:var(--faint);font-size:12px;margin-top:10px">🔒 این گفتگو بسته شده و سابقه آن حفظ شده است.</div>`}
+ </article>`).join(""):`<div class="card" style="text-align:center;padding:60px;color:var(--faint)">تیکتی در این بخش وجود ندارد.</div>`}</section></div>`;
+}
+</script>
+</body></html>
