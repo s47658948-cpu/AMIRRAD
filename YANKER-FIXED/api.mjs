@@ -132,6 +132,18 @@ async function getTickets(username=null){
   return tickets.map(t=>mapTicket(t,messages.filter(m=>m.ticket_id===t.id).map(mapTicketMessage)));
 }
 
+async function isApprovedMember(username){
+  const u = normalizeUsername(username);
+  if(!u) return false;
+  const approved = await db(`requests?username=eq.${encodeURIComponent(u)}&status=eq.approved&select=id&limit=1`);
+  return Array.isArray(approved) && approved.length > 0;
+}
+
+function requireUsername(value){
+  const username = normalizeUsername(value);
+  return username || null;
+}
+
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") return reply(204, {});
   const action = event.queryStringParameters?.action || "";
@@ -212,7 +224,12 @@ export async function handler(event) {
 
     if (event.httpMethod === "GET" && action === "members") return reply(200, { ok: true, members: await getMembers() });
 
-    if (event.httpMethod === "GET" && action === "announcements") return reply(200, { ok: true, announcements: await getAnnouncements() });
+    if (event.httpMethod === "GET" && action === "announcements") {
+      const username = requireUsername(event.queryStringParameters?.username);
+      if(!username) return reply(401,{ok:false,error:"برای مشاهده اطلاعیه‌ها باید وارد حساب کاربری خود شوید."});
+      if(!(await isApprovedMember(username))) return reply(403,{ok:false,error:"فقط اعضایی که درخواست عضویتشان تأیید شده است می‌توانند اطلاعیه‌ها را ببینند."});
+      return reply(200, { ok: true, announcements: await getAnnouncements() });
+    }
 
     if (event.httpMethod === "POST" && action === "ticket-create") {
       const username = normalizeUsername(body.username);
@@ -220,6 +237,7 @@ export async function handler(event) {
       const subject = String(body.subject || "").trim();
       const message = String(body.message || "").trim();
       if(!username || !name || !subject || !message) return reply(400,{ok:false,error:"اطلاعات تیکت کامل نیست."});
+      if(!(await isApprovedMember(username))) return reply(403,{ok:false,error:"فقط اعضایی که درخواست عضویتشان تأیید شده است می‌توانند تیکت ارسال کنند."});
 
       // Anti-spam cooldown: each user can open a new ticket only 10 seconds
       // after their most recently created ticket (including tickets sent by admin).
@@ -258,11 +276,13 @@ export async function handler(event) {
     if (event.httpMethod === "GET" && action === "tickets") {
       const username=normalizeUsername(event.queryStringParameters?.username);
       if(!username) return reply(400,{ok:false,error:"نام کاربری لازم است."});
+      if(!(await isApprovedMember(username))) return reply(403,{ok:false,error:"فقط اعضای تأییدشده به مرکز تیکت دسترسی دارند."});
       return reply(200,{ok:true,tickets:await getTickets(username)});
     }
     if (event.httpMethod === "POST" && action === "ticket-close-own") {
       const id=String(body.id||""), username=normalizeUsername(body.username);
       if(!id||!username) return reply(400,{ok:false,error:"اطلاعات تیکت نامعتبر است."});
+      if(!(await isApprovedMember(username))) return reply(403,{ok:false,error:"فقط اعضای تأییدشده می‌توانند تیکت‌های خود را مدیریت کنند."});
       const rows=await db(`tickets?id=eq.${encodeURIComponent(id)}&username=eq.${encodeURIComponent(username)}&limit=1`);
       if(!rows?.length) return reply(404,{ok:false,error:"تیکت پیدا نشد."});
       await db(`tickets?id=eq.${encodeURIComponent(id)}&username=eq.${encodeURIComponent(username)}`,{method:"PATCH",body:JSON.stringify({status:"closed",updated_at:Date.now()})});
