@@ -381,6 +381,8 @@ button,a{touch-action:manipulation}
   .nav-links a,.btn,.admin-side button,.ticket-tabs button{min-height:42px}
 }
 
+
+.ticket-reply-form{display:flex;gap:8px;align-items:flex-end;margin:12px 0}.ticket-reply-form textarea{flex:1;min-height:48px;max-height:160px;resize:vertical;padding:10px;border:1px solid var(--border);background:rgba(5,8,16,.55);color:var(--text);border-radius:10px;font-family:inherit;line-height:1.7}.ticket-reply-form textarea:focus{border-color:var(--border-strong);outline:none}.ticket-reply-form button{height:44px;white-space:nowrap}@media(max-width:640px){.ticket-reply-form{flex-direction:column;align-items:stretch}.ticket-reply-form button{width:100%}}
 </style>
 
 <style id="yanker-membership-admin-polish">
@@ -758,6 +760,21 @@ async function refreshTickets(){
     return STATE.tickets;
   }catch(e){ console.warn("ticket sync failed",e); return []; }
 }
+let ticketPollTimer=null; let ticketPollBusy=false; let ticketSnapshot="";
+async function pollUserTickets(){
+  if(ticketPollBusy || !STATE.user || !hasApprovedMembership()) return;
+  ticketPollBusy=true;
+  try{
+    const before=ticketSnapshot;
+    const list=await refreshTickets();
+    const next=JSON.stringify(list.map(t=>[t.id,t.status,t.updatedAt,(t.messages||[]).length]));
+    ticketSnapshot=next;
+    if(before && before!==next && STATE.route==='tickets') render();
+  }catch(e){}
+  finally{ticketPollBusy=false;}
+}
+function startUserTicketPolling(){ clearInterval(ticketPollTimer); ticketPollTimer=setInterval(pollUserTickets,2500); }
+
 let ticketCooldownUntil=0;
 async function createTicket(e){
   e.preventDefault();
@@ -789,6 +806,16 @@ async function closeOwnTicket(id){
   if(!confirm("این تیکت بسته شود؟ پیام‌ها و سابقه گفتگو حفظ می‌شوند.")) return;
   try{ await yankerApi("ticket-close-own","POST",{id,username:STATE.user.username}); await refreshTickets(); render(); }catch(e){ alert(e.message); }
 }
+async function replyOwnTicket(e,id){
+  e.preventDefault();
+  const form=e.currentTarget, field=form.querySelector('textarea[name="message"]'), text=String(field?.value||"").trim();
+  if(!text) return;
+  const btn=form.querySelector('button[type="submit"]');
+  if(btn){btn.disabled=true;btn.textContent='در حال ارسال...';}
+  try{ await yankerApi("ticket-reply-own","POST",{id,username:STATE.user.username,message:text}); await refreshTickets(); render(); }
+  catch(err){ alert(err.message); if(btn){btn.disabled=false;btn.textContent='ارسال';} }
+}
+
 async function replyTicket(id){
   const text=prompt("پاسخ مدیریت:"); if(!text || !text.trim()) return;
   try{ await yankerApi("ticket-reply","POST",{id,message:text.trim()}); await loadTicketsAdmin(); render(); }catch(e){ alert(e.message); }
@@ -1578,7 +1605,7 @@ function ticketCard(t){
   return `<div class="ticket-card ${t.status==='answered'?'is-answered':''} ${t.status==='closed'?'is-closed':''}">
     <div class="ticket-card-top"><div><div class="ticket-subject">${esc(t.subject)}</div><div class="hint">${fmtDate(t.createdAt)}</div></div><span class="ticket-status ${t.status}">${t.status==='closed'?'بسته':t.status==='answered'?'پاسخ مدیریت':'در انتظار پاسخ'}</span></div>
     <div class="ticket-thread">${t.messages.map(m=>`<div class="ticket-message ${m.sender==='admin'?'from-admin':'from-user'}"><div class="ticket-avatar">${m.sender==='admin'?'Y':'شما'}</div><div class="ticket-bubble"><div class="ticket-meta"><b>${esc(m.sender==='admin'?'مدیریت':m.senderName)}</b><small>${fmtDate(m.createdAt)}</small></div><div>${esc(m.body)}</div></div></div>`).join('')}</div>
-    ${t.status!=='closed'?`<button class="btn btn-sm btn-ghost" onclick="closeOwnTicket('${t.id}')">✓ بستن تیکت</button>`:`<span class="hint">این تیکت بسته شده؛ پیام‌ها و سابقه گفتگو حفظ شده‌اند.</span>`}
+    ${t.status!=='closed'?`<form class="ticket-reply-form" onsubmit="replyOwnTicket(event,'${t.id}')"><textarea name="message" maxlength="3000" placeholder="پیام جدید..." required></textarea><button class="btn btn-primary btn-sm" type="submit">ارسال</button></form><button class="btn btn-sm btn-ghost" onclick="closeOwnTicket('${t.id}')">✓ بستن تیکت</button>`:`<span class="hint">این تیکت بسته شده؛ پیام‌ها و سابقه گفتگو حفظ شده‌اند.</span>`}
   </div>`;
 }
 
@@ -2075,6 +2102,9 @@ window.closeEmbeddedAdmin=function(){
   if(frame) frame.style.display="none";
 };
 document.addEventListener("keydown",function(e){
+  const ta=e.target.closest?.('.ticket-reply-form textarea');
+  if(ta && e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ta.form?.requestSubmit(); return; }
+
   if(e.key==="Enter" && document.getElementById("embeddedAdminOverlay")?.style.display==="block"){
     unlockEmbeddedAdmin();
   }
